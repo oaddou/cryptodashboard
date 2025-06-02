@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Omisoft Pro Crypto Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Professional crypto analytics dashboard powered by Omisoft, Cohere & CoinGecko."
+    />
+    <meta name="theme-color" content="#181e1b" />
+    <meta
+      name="keywords"
+      content="crypto, dashboard, bitcoin, ethereum, solana, analytics, price, chart, Omisoft, Cohere, CoinGecko"
+    />
+    <meta name="author" content="Omar Addou" />
+    <meta name="robots" content="index,follow" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link
+      rel="icon"
+      href="https://assets.coingecko.com/coins/images/1/large/bitcoin.png"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+      /* Custom CSS to complement Tailwind */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #181e1b; /* --surface */
+        color: #e3ffe1; /* --text */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden; /* Prevent horizontal scrollbar if three.js canvas slightly overflows */
+      }
+
+      .font-jetbrains-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Custom scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        background: #232926;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #39ff14b7;
+        border-radius: 10px;
+        border: 2px solid #181e1b;
+      }
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #39ff14b7 #191d20;
+      }
+
+      /* Typewriter animation */
+      .typewriter-text-container {
+        display: inline-block;
+        white-space: pre-line;
+        overflow-wrap: break-word;
+      }
+      .typewriter-cursor {
+        display: inline-block;
+        width: 0.11em;
+        background-color: #39ff14;
+        margin-left: 2px;
+        animation: blink-caret 0.8s step-end infinite alternate;
+      }
+      @keyframes blink-caret {
+        0%,
+        100% {
+          background-color: #39ff14;
+        }
+        50% {
+          background-color: transparent;
+        }
+      }
+
+      /* Chart image animations */
+      .chart-img-animated {
+        transition: box-shadow 0.3s ease-in-out, filter 0.3s ease-in-out,
+          transform 0.2s ease-in-out;
+        filter: drop-shadow(0 2px 10px rgba(36, 46, 30, 0.26));
+      }
+      .chart-img-animated[data-trend="up"] {
+        box-shadow: 0 4px 30px rgba(57, 255, 20, 0.5),
+          0 0 15px rgba(57, 255, 20, 0.3);
+        border: 1.5px solid #39ff14;
+        filter: drop-shadow(0 2px 14px rgba(57, 255, 20, 0.42));
+        animation: upFade 0.95s cubic-bezier(0.25, 0.85, 0.35, 1.4);
+      }
+      .chart-img-animated[data-trend="down"] {
+        box-shadow: 0 4px 30px rgba(255, 82, 82, 0.4),
+          0 0 15px rgba(255, 82, 82, 0.25);
+        border: 1.5px solid #ff5252;
+        filter: drop-shadow(0 2px 14px rgba(255, 82, 82, 0.47));
+        animation: downFade 0.95s cubic-bezier(0.25, 0.85, 0.35, 1.4);
+      }
+      @keyframes upFade {
+        from {
+          filter: brightness(1.15)
+            drop-shadow(0 8px 45px rgba(57, 255, 20, 0.7));
+          transform: scale(1.01);
+        }
+        to {
+          filter: brightness(1) drop-shadow(0 2px 14px rgba(57, 255, 20, 0.42));
+          transform: scale(1);
+        }
+      }
+      @keyframes downFade {
+        from {
+          filter: brightness(1.12)
+            drop-shadow(0 8px 45px rgba(255, 82, 82, 0.6));
+          transform: scale(1.01);
+        }
+        to {
+          filter: brightness(1) drop-shadow(0 2px 14px rgba(255, 82, 82, 0.47));
+          transform: scale(1);
+        }
+      }
+
+      /* Input focus animation */
+      input[type="text"]:focus {
+        border-color: #39ff14; /* --primary */
+        box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.4),
+          0 2px 10px rgba(57, 255, 20, 0.3);
+        transform: translateY(-1px);
+        transition: all 0.2s ease-out;
+      }
+
+      .sticky-header-bg {
+        background-color: rgba(27, 31, 34, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      .sticky-hud-bg {
+        background-color: rgba(24, 28, 25, 0.88);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+
+      /* General fade-in for dashboard card */
+      .dashboard-card-animate {
+        animation: fadeInCard 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        opacity: 0;
+      }
+      @keyframes fadeInCard {
+        from {
+          opacity: 0;
+          transform: translateY(15px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* HUD Badge hover animation */
+      .hud-badge {
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+      }
+      .hud-badge:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Three.js background canvas */
+      #three-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1; /* Behind all other content */
+        opacity: 0.7; /* Make it subtle */
+      }
+    </style>
+    <script>
+      // This tailwind.config is for conceptual reference when using the CDN.
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "omisoft-primary": "#39ff14",
+              "omisoft-surface": "#181e1b",
+              "omisoft-surface2": "#1b1f22",
+              "omisoft-accent": "#65ffb8",
+              "omisoft-text": "#e3ffe1",
+              "omisoft-text-faint": "#a7ffce",
+              "omisoft-warn": "#ff3b4a",
+              "omisoft-success": "#48ff4b",
+            },
+            fontFamily: {
+              mono: ["JetBrains Mono", "monospace"],
+              sans: ["Inter", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="flex flex-col min-h-screen bg-omisoft-surface text-omisoft-text">
+    <canvas id="three-bg"></canvas>
+
+    <header
+      class="sticky top-0 z-30 shadow-xl sticky-header-bg border-b-2 border-[#232c27]/70"
+    >
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <div class="w-1/5 md:w-1/4"></div>
+          <div class="text-center">
+            <h1
+              class="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-omisoft-primary tracking-wider"
+              style="text-shadow: 0 2px 18px rgba(57, 255, 20, 0.45)"
+            >
+              Omisoft Pro
+            </h1>
+            <p
+              class="font-mono text-[0.6rem] sm:text-xs text-[#93ffd6]/90 tracking-tight mt-0.5"
+            >
+              AI-Powered Crypto Analytics
+            </p>
+          </div>
+          <div class="w-1/5 md:w-1/4 flex justify-end items-center">
+            <div
+              id="clockBox"
+              class="font-mono text-[0.55rem] sm:text-[0.7rem] md:text-xs text-[#99f7db]/90 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 whitespace-nowrap items-end sm:items-center"
+            >
+              <i
+                class="fas fa-clock text-[#49ff8a] hidden sm:inline text-sm"
+              ></i>
+              <span id="nlTime" class="text-right sm:text-left"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main
+      class="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-6 flex justify-center items-start"
+    >
+      <section
+        class="dashboard-card dashboard-card-animate bg-gradient-to-br from-[#191d20] to-[#242929] rounded-xl sm:rounded-2xl shadow-2xl border-2 border-[#242d29]/80 w-full max-w-4xl p-3 sm:p-5 md:p-6 font-mono"
+      >
+        <form id="cryptoForm" autocomplete="off" class="mb-4 sm:mb-5">
+          <div
+            class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3"
+          >
+            <label for="cryptoInput" class="sr-only">Cryptocurrency ID</label>
+            <input
+              type="text"
+              id="cryptoInput"
+              name="cryptoInput"
+              placeholder="Enter Crypto ID (e.g., bitcoin, ethereum)"
+              required
+              class="flex-grow bg-[#222725]/90 text-white placeholder-gray-500 px-3.5 py-2.5 sm:px-4 sm:py-3 border-2 border-[#2eb966]/70 rounded-lg text-sm sm:text-base focus:border-omisoft-primary focus:ring-omisoft-primary focus:ring-2 transition-all duration-150 shadow-md hover:border-[#2eb966]"
+            />
+            <div class="flex items-center gap-2.5 sm:gap-3 mt-2 sm:mt-0">
+              <button
+                type="submit"
+                class="icon-btn flex-1 sm:flex-none bg-gradient-to-r from-omisoft-primary to-omisoft-accent hover:from-omisoft-accent hover:to-omisoft-primary text-[#191c19] px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow-lg hover:shadow-omisoft-primary/60 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+                aria-label="Search Cryptocurrency"
+                title="Search"
+              >
+                <i class="fas fa-search mr-1.5 sm:mr-2"></i>
+                <span class="hidden sm:inline">Search</span>
+              </button>
+              <button
+                type="button"
+                id="clearBtn"
+                class="icon-btn flex-1 sm:flex-none bg-gray-600 hover:bg-gray-500 text-white px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow-lg hover:shadow-gray-500/60 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+                aria-label="Clear Output"
+                title="Clear Output"
+              >
+                <i class="fas fa-times mr-1.5 sm:mr-2"></i>
+                <span class="hidden sm:inline">Clear</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div
+          class="scroll-wrap custom-scrollbar bg-[#161a1d]/60 p-3 sm:p-4 rounded-lg overflow-y-auto h-[60vh] sm:h-[62vh] md:h-[65vh] max-h-[calc(100vh-260px)] sm:max-h-[calc(100vh-300px)] relative"
+        >
+          <div
+            id="hudRowContainer"
+            class="sticky top-0 z-20 mb-3 p-2.5 sm:p-3 rounded-lg shadow-lg sticky-hud-bg font-mono text-xs sm:text-sm"
+            style="display: none"
+          ></div>
+
+          <div
+            id="resultSection"
+            class="result-section min-h-[70px] sm:min-h-[100px]"
+          >
+            <p
+              class="text-omisoft-text-faint text-center py-10 sm:py-12 text-sm sm:text-base"
+            >
+              Enter a cryptocurrency ID to get started.
+            </p>
+          </div>
+
+          <div
+            id="dropdownSection"
+            class="select-graph-range mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-gray-700/40"
+            style="display: none"
+          >
+            <div
+              class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3"
+            >
+              <label
+                for="graphRangeSelect"
+                class="font-semibold text-[#99ffc6] text-sm sm:text-base whitespace-nowrap"
+                >Price Chart Range:</label
+              >
+              <select
+                id="graphRangeSelect"
+                class="w-full sm:w-auto bg-[#181f18]/90 text-omisoft-primary border-2 border-omisoft-primary/80 rounded-md px-3 py-2 text-sm sm:text-base focus:border-omisoft-accent focus:ring-omisoft-accent/70 focus:ring-1 transition-all duration-150 hover:border-omisoft-primary"
+              >
+                <option value="1">24h</option>
+                <option value="7" selected>7d</option>
+                <option value="30">1m</option>
+                <option value="90">3m</option>
+                <option value="365">1y</option>
+                <option value="max">Max</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer
+      class="bg-[#1a1d1c]/95 text-center py-3.5 sm:py-4 border-t-2 border-[#222722]/80 shadow-[-2px_0px_20px_rgba(34,34,34,0.5)]"
+    >
+      <div class="container mx-auto px-4">
+        <p class="font-mono text-xs sm:text-sm text-[#85ffcf]/90">
+          &copy; <span id="year"></span> Omisoft All Rights Reserved | By Omar
+          Addou
+        </p>
+        <p
+          class="font-mono text-[0.65rem] sm:text-xs text-[#c7ffe9]/80 mt-0.5 sm:mt-1"
+        >
+          Powered by Cohere &amp; CoinGecko. For educational &amp; research
+          purposes only.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // DOM Elements
+      const yearElement = document.getElementById("year");
+      const nlTimeElement = document.getElementById("nlTime");
+      const cryptoForm = document.getElementById("cryptoForm");
+      const cryptoInput = document.getElementById("cryptoInput");
+      const clearBtn = document.getElementById("clearBtn");
+      const resultSection = document.getElementById("resultSection");
+      const dropdownSection = document.getElementById("dropdownSection");
+      const graphRangeSelect = document.getElementById("graphRangeSelect");
+      const hudRowContainer = document.getElementById("hudRowContainer");
+
+      let lastCryptoId = "";
+      let lastSummaryText = "";
+
+      // --- Utility Functions ---
+      function updateClock() {
+        if (nlTimeElement) {
+          const now = new Date();
+          const options = {
+            timeZone: "Europe/Amsterdam",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          };
+          const formatter = new Intl.DateTimeFormat("nl-NL", options);
+          const parts = formatter.formatToParts(now);
+
+          const findPart = (type) =>
+            parts.find((p) => p.type === type)?.value || "";
+
+          const day = findPart("day");
+          const month = findPart("month");
+          const year = findPart("year");
+          const hour = findPart("hour");
+          const minute = findPart("minute");
+          const second = findPart("second");
+
+          const dateString = `${day}-${month}-${year}`;
+          const timeString = `${hour}:${minute}:${second}`;
+
+          nlTimeElement.innerHTML = `<span class="block sm:inline text-omisoft-text-faint/80">${dateString}</span><span class="block sm:inline sm:ml-1">${timeString}</span>`;
+        }
+      }
+
+      function typewriterEffect(element, text, speed = 14) {
+        if (!element) return;
+        element.innerHTML = "";
+        const textContainer = document.createElement("span");
+        textContainer.className = "typewriter-text-container";
+        const cursor = document.createElement("span");
+        cursor.className = "typewriter-cursor";
+
+        element.appendChild(textContainer);
+        element.appendChild(cursor);
+
+        let i = 0;
+        function type() {
+          if (i < text.length) {
+            textContainer.textContent += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+          } else {
+            cursor.style.display = "none";
+          }
+        }
+        type();
+      }
+
+      function scrollToTopInScrollWrap() {
+        const scrollWrap = document.querySelector(".scroll-wrap");
+        if (scrollWrap) {
+          setTimeout(() => {
+            scrollWrap.scrollTo({ top: 0, behavior: "smooth" });
+          }, 60);
+        }
+      }
+
+      function displayLoading(message = "Loading...") {
+        resultSection.innerHTML = `
+                <div class="flex flex-col items-center justify-center text-center py-10 sm:py-16">
+                    <i class="fas fa-spinner fa-spin text-3xl sm:text-4xl text-omisoft-primary mb-3.5"></i>
+                    <p class="text-omisoft-accent text-sm sm:text-base">${message}</p>
+                </div>`;
+        hudRowContainer.style.display = "none";
+        dropdownSection.style.display = "none";
+      }
+
+      function displayError(message) {
+        resultSection.innerHTML = `
+                <div class="text-center py-8 sm:py-10 px-3">
+                    <i class="fas fa-exclamation-triangle text-3xl text-omisoft-warn mb-3.5"></i>
+                    <p class="text-omisoft-warn font-semibold text-sm sm:text-base">${message}</p>
+                </div>`;
+        hudRowContainer.style.display = "none";
+        dropdownSection.style.display = "none";
+      }
+
+      // --- Event Handlers ---
+      cryptoForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const cryptoId = cryptoInput.value.trim().toLowerCase();
+        if (!cryptoId) {
+          displayError("Please enter a cryptocurrency ID.");
+          return;
+        }
+        displayLoading(`Fetching data for ${cryptoId}...`);
+        lastCryptoId = cryptoId;
+        const days = graphRangeSelect.value || "7";
+        await fetchCryptoDashboard(cryptoId, days);
+      });
+
+      clearBtn.addEventListener("click", function () {
+        cryptoInput.value = "";
+        resultSection.innerHTML =
+          '<p class="text-omisoft-text-faint text-center py-10 sm:py-12 text-sm sm:text-base">Enter a cryptocurrency ID to get started.</p>';
+        hudRowContainer.style.display = "none";
+        dropdownSection.style.display = "none";
+        lastCryptoId = "";
+        lastSummaryText = "";
+        cryptoInput.focus();
+      });
+
+      graphRangeSelect.addEventListener("change", async function () {
+        if (!lastCryptoId) return;
+        const days = this.value;
+        await fetchChartAndTable(lastCryptoId, days);
+      });
+
+      // --- API Fetching Functions ---
+      async function fetchCryptoDashboard(cryptoId, days = "7") {
+        try {
+          const response = await fetch("/api/crypto", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: cryptoId, days: days }),
+          });
+
+          const responseData = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              responseData.error ||
+                `HTTP error! status: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const data = responseData;
+
+          if (data.error) {
+            displayError(data.error);
+            return;
+          }
+
+          if (data.html) {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = data.html;
+            const dashboardOutputWrap = tempDiv.querySelector(
+              ".dashboard-output-wrap"
+            );
+
+            if (!dashboardOutputWrap) {
+              displayError(
+                "Malformed response from server (could not find .dashboard-output-wrap)."
+              );
+              console.error("Problematic HTML from server:", data.html);
+              return;
+            }
+
+            resultSection.innerHTML = ""; // Clear previous main results
+
+            // 1. Populate HUD Container
+            const hudRowContent = dashboardOutputWrap.querySelector(".hud-row");
+            const cardTopContent =
+              dashboardOutputWrap.querySelector(".card-top");
+
+            if (hudRowContent && cardTopContent) {
+              hudRowContainer.innerHTML =
+                hudRowContent.outerHTML + cardTopContent.outerHTML;
+              const logoImg = hudRowContainer.querySelector("img.coin-logo");
+              if (logoImg) {
+                logoImg.classList.remove("border", "border-omisoft-primary/30");
+                logoImg.classList.add("border-0");
+              }
+              hudRowContainer.classList.add(
+                "opacity-0",
+                "transform",
+                "-translate-y-2"
+              );
+              hudRowContainer.style.display = "block";
+              setTimeout(() => {
+                hudRowContainer.classList.remove("opacity-0", "-translate-y-2");
+                hudRowContainer.classList.add(
+                  "opacity-100",
+                  "translate-y-0",
+                  "transition-all",
+                  "duration-500",
+                  "ease-out"
+                );
+              }, 50);
+            } else {
+              hudRowContainer.style.display = "none";
+            }
+
+            // 2. Create and Insert "About Omisoft" Section
+            const aboutOmisoftSection = document.createElement("div");
+            aboutOmisoftSection.id = "aboutOmisoftSection";
+            aboutOmisoftSection.className =
+              "about-box bg-[#20262a]/70 p-3 my-3 rounded-lg border border-[#222]/50 font-mono text-xs sm:text-sm text-omisoft-text leading-relaxed";
+            aboutOmisoftSection.innerHTML = `
+                        <h3 class="summary-title font-mono text-omisoft-accent mb-2 text-sm sm:text-base font-semibold flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i>About Omisoft
+                        </h3>
+                        <p><b>Omisoft</b> is a data-driven crypto platform, founded by <b>Omar Addou</b>, an experienced supply chain specialist, tech enthusiast, and Python/AI aficionado. Omar’s mission with Omisoft is to bring innovation and transparency to the crypto world with clear data and accessible analysis.</p><br>
+                        <p>The dashboard utilizes the <b>Cohere AI API</b> for high-quality, automated trend analyses and textual insights. Market data, community, and chain info come directly and up-to-date from the <b>CoinGecko API</b>.</p><br>
+                        <p><span class="text-omisoft-accent">Gain overview, understand the market, and make smarter decisions!</span></p>
+                    `;
+            resultSection.appendChild(aboutOmisoftSection);
+
+            // 3. Handle AI Summary
+            const summaryContainer = document.createElement("div");
+            summaryContainer.id = "aiSummaryContainer";
+            resultSection.appendChild(summaryContainer); // Append after "About"
+            const summaryBoxElement =
+              dashboardOutputWrap.querySelector(".summary-box");
+
+            if (summaryBoxElement) {
+              const clonedSummaryBox = summaryBoxElement.cloneNode(true);
+              const summaryTextElement =
+                clonedSummaryBox.querySelector("#typewriter-output");
+
+              if (summaryTextElement) {
+                if (
+                  summaryTextElement.innerText &&
+                  summaryTextElement.innerText.trim() !== ""
+                ) {
+                  lastSummaryText = summaryTextElement.innerText.trim();
+                  summaryTextElement.innerHTML = "";
+                  summaryTextElement.id = "typewriter-output-dynamic";
+                  summaryTextElement.className =
+                    "typewriter-area font-mono text-omisoft-text text-xs sm:text-sm leading-relaxed min-h-[60px] py-1";
+                  typewriterEffect(summaryTextElement, lastSummaryText);
+                } else {
+                  summaryTextElement.innerHTML =
+                    '<p class="font-mono text-xs sm:text-sm text-omisoft-text-faint p-2">AI analysis not available or empty for this query.</p>';
+                }
+              }
+              summaryContainer.appendChild(clonedSummaryBox);
+            }
+
+            // 4. Handle Main Stats, Changes Table, and Chart Section
+            const otherContentContainer = document.createElement("div");
+            otherContentContainer.id = "otherContentContainer";
+
+            const mainStatsRowElement =
+              dashboardOutputWrap.querySelector(".main-stats-row");
+            if (mainStatsRowElement) {
+              otherContentContainer.appendChild(
+                mainStatsRowElement.cloneNode(true)
+              );
+            }
+
+            const changesTableWrapElement = dashboardOutputWrap.querySelector(
+              ".changes-table-wrap"
+            );
+            if (changesTableWrapElement) {
+              const clonedTableWrap = changesTableWrapElement.cloneNode(true);
+              const table = clonedTableWrap.querySelector(".changes-table");
+              if (table) {
+                table.classList.add(
+                  "w-full",
+                  "my-3.5",
+                  "font-mono",
+                  "text-xs",
+                  "sm:text-sm",
+                  "table-fixed"
+                );
+                table.querySelectorAll("th, td").forEach((cell) => {
+                  cell.classList.add(
+                    "p-1.5",
+                    "sm:p-2",
+                    "text-center",
+                    "border-t",
+                    "border-gray-700/50"
+                  );
+                });
+                table.querySelectorAll("th").forEach((th) => {
+                  th.classList.add(
+                    "bg-[#161e1b]/80",
+                    "text-omisoft-primary",
+                    "font-semibold",
+                    "uppercase",
+                    "text-[0.65rem]",
+                    "sm:text-[0.7rem]",
+                    "tracking-wider"
+                  );
+                });
+              }
+              otherContentContainer.appendChild(clonedTableWrap);
+            }
+
+            const chartSectionElement =
+              dashboardOutputWrap.querySelector("#chartSection");
+            if (chartSectionElement) {
+              const clonedChartSection = chartSectionElement.cloneNode(true);
+              const img = clonedChartSection.querySelector("img");
+              if (img) {
+                img.classList.add(
+                  "chart-img-animated",
+                  "rounded-lg",
+                  "border",
+                  "mt-2.5",
+                  "mb-1.5",
+                  "w-full",
+                  "shadow-lg"
+                );
+                const trend = data.trend === "down" ? "down" : "up";
+                img.setAttribute("data-trend", trend);
+              }
+              otherContentContainer.appendChild(clonedChartSection);
+            }
+            resultSection.appendChild(otherContentContainer);
+
+            dropdownSection.style.display = "flex";
+            graphRangeSelect.value = String(days);
+            scrollToTopInScrollWrap();
+          } else {
+            displayError("No HTML content returned from server.");
+          }
+        } catch (err) {
+          console.error("FetchDashboard Error:", err);
+          displayError(
+            err.message ||
+              "Error contacting the backend or processing data. Please try again."
+          );
+        }
+      }
+
+      async function fetchChartAndTable(cryptoId, days) {
+        const chartContainer = document.getElementById("chartSection");
+        const tableContainer = document.querySelector(".changes-table-wrap");
+
+        if (!chartContainer || !tableContainer) {
+          await fetchCryptoDashboard(cryptoId, days);
+          return;
+        }
+
+        chartContainer.innerHTML = `<div class="flex items-center justify-center text-omisoft-primary p-4 min-h-[100px]"><i class="fas fa-spinner fa-spin text-2xl mr-2"></i> Loading chart...</div>`;
+        tableContainer.innerHTML = `<div class="flex items-center justify-center text-omisoft-primary p-4 min-h-[50px]"><i class="fas fa-spinner fa-spin text-xl mr-2"></i> Loading table...</div>`;
+
+        try {
+          const response = await fetch("/api/crypto_chart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: cryptoId, days: days }),
+          });
+
+          const responseData = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              responseData.error ||
+                `HTTP error! status: ${response.status} ${response.statusText}`
+            );
+          }
+          const data = responseData;
+
+          if (data.error) {
+            chartContainer.innerHTML = `<div class="text-omisoft-warn p-3 text-xs sm:text-sm">${data.error}</div>`;
+            tableContainer.innerHTML = "";
+            return;
+          }
+
+          if (data.chart_html) {
+            chartContainer.innerHTML = data.chart_html;
+            const img = chartContainer.querySelector("img");
+            if (img) {
+              img.classList.add(
+                "chart-img-animated",
+                "rounded-lg",
+                "border",
+                "mt-2.5",
+                "mb-1.5",
+                "w-full",
+                "shadow-lg"
+              );
+              const trend = data.trend === "down" ? "down" : "up";
+              img.setAttribute("data-trend", trend);
+            }
+          } else {
+            chartContainer.innerHTML = `<div class="text-omisoft-warn p-3 text-xs sm:text-sm">Chart data not available.</div>`;
+          }
+
+          if (data.changes_table) {
+            tableContainer.innerHTML = data.changes_table;
+            const table = tableContainer.querySelector(".changes-table");
+            if (table) {
+              table.classList.add(
+                "w-full",
+                "my-3.5",
+                "font-mono",
+                "text-xs",
+                "sm:text-sm",
+                "table-fixed"
+              );
+              table.querySelectorAll("th, td").forEach((cell) => {
+                cell.classList.add(
+                  "p-1.5",
+                  "sm:p-2",
+                  "text-center",
+                  "border-t",
+                  "border-gray-700/50"
+                );
+              });
+              table.querySelectorAll("th").forEach((th) => {
+                th.classList.add(
+                  "bg-[#161e1b]/80",
+                  "text-omisoft-primary",
+                  "font-semibold",
+                  "uppercase",
+                  "text-[0.65rem]",
+                  "sm:text-[0.7rem]",
+                  "tracking-wider"
+                );
+              });
+            }
+          } else {
+            tableContainer.innerHTML = `<div class="text-omisoft-warn p-3 text-xs sm:text-sm">Price changes data not available.</div>`;
+          }
+        } catch (err) {
+          console.error("FetchChartAndTable Error:", err);
+          chartContainer.innerHTML = `<div class="text-omisoft-warn p-3 text-xs sm:text-sm">Error loading chart. ${err.message}</div>`;
+          tableContainer.innerHTML = `<div class="text-omisoft-warn p-3 text-xs sm:text-sm">Error loading table.</div>`;
+        }
+      }
+
+      // --- Initializations & Three.js Background ---
+      if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const card = document.querySelector(".dashboard-card");
+        if (card) {
+          card.classList.add("dashboard-card-animate");
+        }
+
+        // --- Three.js Background Animation ---
+        // Ensure THREE is available
+        if (typeof THREE === "undefined") {
+          console.error(
+            "Three.js has not been loaded. Background animation cannot start."
+          );
+          return;
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.getElementById("three-bg"),
+          alpha: true,
+        });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setClearColor(0x000000, 0);
+
+        const particlesCount = 1500;
+        const positions = new Float32Array(particlesCount * 3);
+        const colors = new Float32Array(particlesCount * 3);
+
+        // Define colors directly as JS constants
+        // These were previously attempted to be read from tailwind.theme.extend.colors, causing an error.
+        const OMISOFT_PRIMARY_COLOR_HEX = "#39ff14";
+        const OMISOFT_ACCENT_COLOR_HEX = "#65ffb8";
+        const OMISOFT_SURFACE2_COLOR_HEX = "#1b1f22";
+
+        const primaryColor = new THREE.Color(OMISOFT_PRIMARY_COLOR_HEX);
+        const accentColor = new THREE.Color(OMISOFT_ACCENT_COLOR_HEX);
+        const surfaceColor = new THREE.Color(OMISOFT_SURFACE2_COLOR_HEX);
+
+        for (let i = 0; i < particlesCount * 3; i += 3) {
+          positions[i] = (Math.random() - 0.5) * 15;
+          positions[i + 1] = (Math.random() - 0.5) * 10;
+          positions[i + 2] = (Math.random() - 0.5) * 10;
+
+          let particleColor;
+          const rand = Math.random();
+          if (rand < 0.4) particleColor = primaryColor;
+          else if (rand < 0.8) particleColor = accentColor;
+          else particleColor = surfaceColor.clone().lerp(primaryColor, 0.3);
+
+          colors[i] = particleColor.r;
+          colors[i + 1] = particleColor.g;
+          colors[i + 2] = particleColor.b;
+        }
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute(
+          "position",
+          new THREE.BufferAttribute(positions, 3)
+        );
+        particlesGeometry.setAttribute(
+          "color",
+          new THREE.BufferAttribute(colors, 3)
+        );
+
+        const particlesMaterial = new THREE.PointsMaterial({
+          size: 0.03,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.8,
+          sizeAttenuation: true,
+        });
+
+        const particleSystem = new THREE.Points(
+          particlesGeometry,
+          particlesMaterial
+        );
+        scene.add(particleSystem);
+
+        camera.position.z = 3;
+
+        let mouseX = 0,
+          mouseY = 0;
+        document.addEventListener("mousemove", (event) => {
+          mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+          mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        function animateThree() {
+          requestAnimationFrame(animateThree);
+
+          particleSystem.rotation.x += 0.0001 + mouseY * 0.00005;
+          particleSystem.rotation.y += 0.0002 + mouseX * 0.00005;
+
+          const time = Date.now() * 0.00005;
+          const currentPositions =
+            particleSystem.geometry.attributes.position.array;
+          for (let i = 0; i < particlesCount; i++) {
+            const i3 = i * 3;
+            currentPositions[i3 + 1] +=
+              Math.sin(time + currentPositions[i3]) * 0.0003;
+          }
+          particleSystem.geometry.attributes.position.needsUpdate = true;
+
+          renderer.render(scene, camera);
+        }
+        animateThree();
+
+        window.addEventListener("resize", () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.setPixelRatio(window.devicePixelRatio);
+        });
+      });
+
+      cryptoInput.focus();
+    </script>
+  </body>
+</html>
