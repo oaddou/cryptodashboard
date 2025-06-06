@@ -22,6 +22,12 @@ if not COHERE_API_KEY:
 
 app = Flask(__name__)
 
+# Simple health check route
+@app.route('/ping')
+def ping():
+    """Health check endpoint used by monitoring tools."""
+    return jsonify({'status': 'ok'})
+
 # --- Helper Functions ---
 def fmt_num(val, decimals=0, is_currency=False):
     """Formats a number, optionally as currency. Returns 'N/A' on error."""

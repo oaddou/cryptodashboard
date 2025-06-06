@@ -57,7 +57,6 @@ This project aims to offer a comprehensive and user-friendly platform for both e
     ```bash
     pip install -r requirements.txt
     ```
-    *(You'll need to create a `requirements.txt` file by running `pip freeze > requirements.txt` in your activated virtual environment after installing all necessary packages for your `app.py`)*
 
 4.  **Set up environment variables:**
     Create a `.env` file in the root directory and add your API keys and any other configuration:
