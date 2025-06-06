@@ -1,0 +1,8 @@
+Flask
+python-dotenv
+requests
+cohere
+numpy
+pandas
+pytz
+matplotlib
