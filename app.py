@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use('Agg') # Ensure Matplotlib runs in a headless environment
 import matplotlib.pyplot as plt
 import traceback # For detailed error logging
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 # Load .env variables
 load_dotenv()
@@ -24,19 +25,24 @@ app = Flask(__name__)
 
 # --- Helper Functions ---
 def fmt_num(val, decimals=0, is_currency=False):
-    """Formats a number, optionally as currency. Returns 'N/A' on error."""
+    """Formats a number, optionally as currency with rounding. Returns 'N/A' on error."""
     prefix = "$" if is_currency else ""
     try:
         if val is None or val == 'N/A':
             return "N/A"
-        if isinstance(val, str): 
+        if isinstance(val, str):
             val = val.replace(',', '')
-        
-        num = float(val)
-        if decimals == 0: 
-            return f"{prefix}{int(num):,}"
-        return f"{prefix}{num:,.{decimals}f}"
-    except (ValueError, TypeError):
+
+        num_decimal = Decimal(str(val))
+
+        if decimals == 0:
+            rounded = num_decimal.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+            return f"{prefix}{int(rounded):,}"
+
+        quantize_pattern = Decimal(f'1.' + '0' * decimals)
+        rounded = num_decimal.quantize(quantize_pattern, rounding=ROUND_HALF_UP)
+        return f"{prefix}{rounded:,.{decimals}f}"
+    except (ValueError, TypeError, InvalidOperation):
         return "N/A"
 
 def get_trend_color_and_arrow(change_percentage_str):
